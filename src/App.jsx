@@ -94,6 +94,77 @@ const CurrentLocationIcon = () => (
   </svg>
 )
 
+const LightbulbIcon = ({ isOn = false }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`lightbulb-icon ${isOn ? 'on' : ''}`}>
+    <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2z" />
+  </svg>
+)
+
+const CloseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+)
+
+const ExternalLinkIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="external-link-icon">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+  </svg>
+)
+
+// Credits Modal Component
+const CreditsModal = ({ onClose }) => (
+  <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-content credits-modal" onClick={e => e.stopPropagation()}>
+      <button className="credits-close-btn" onClick={onClose}>
+        <CloseIcon />
+      </button>
+      <div className="credits-header">
+        <div className="credits-icon">
+          <LightbulbIcon />
+        </div>
+        <h2 className="credits-title">About SkyCast</h2>
+      </div>
+      <div className="credits-list">
+        <div className="credits-item">
+          <span className="credits-label">Developed by</span>
+          <span className="credits-value">Mahima KG</span>
+        </div>
+        <div className="credits-item">
+          <span className="credits-label">Project Name</span>
+          <span className="credits-value">SkyCast</span>
+        </div>
+        <div className="credits-item">
+          <span className="credits-label">Library</span>
+          <span className="credits-value">React</span>
+        </div>
+        <div className="credits-item">
+          <span className="credits-label">API</span>
+          <span className="credits-value">Open-Meteo APIs</span>
+        </div>
+        <div className="credits-item">
+          <span className="credits-label">UI Inspiration</span>
+          <a href="https://dribbble.com/shots/15524720-Weather-web-app" target="_blank" rel="noopener noreferrer" className="credits-link">
+            Dribbble <ExternalLinkIcon />
+          </a>
+        </div>
+        <div className="credits-item">
+          <span className="credits-label">Fonts</span>
+          <span className="credits-value">Google Fonts</span>
+        </div>
+        <div className="credits-item">
+          <span className="credits-label">CSS</span>
+          <span className="credits-value">Custom CSS</span>
+        </div>
+        <div className="credits-item">
+          <span className="credits-label">Deployed to</span>
+          <span className="credits-value">Vercel</span>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
 // Location Permission Modal Component
 const LocationModal = ({ onRequestPermission }) => (
   <div className="modal-overlay">
@@ -176,6 +247,7 @@ function App() {
   const [showFetchingModal, setShowFetchingModal] = useState(false)
   const [showSearchingModal, setShowSearchingModal] = useState(false)
   const [searchingLocation, setSearchingLocation] = useState('')
+  const [showCreditsModal, setShowCreditsModal] = useState(false)
   const [location, setLocation] = useState('')
 
   const [searchOpen, setSearchOpen] = useState(false)
@@ -465,6 +537,15 @@ function App() {
 
       {showFetchingModal && <FetchingLocationModal />}
       {showSearchingModal && <SearchingModal locationName={searchingLocation} />}
+      {showCreditsModal && <CreditsModal onClose={() => setShowCreditsModal(false)} />}
+
+      <button
+        className="floating-info-btn"
+        onClick={() => setShowCreditsModal(true)}
+        title="About SkyCast"
+      >
+        <LightbulbIcon />
+      </button>
 
       <div className="weather-container">
         {/* Main Panel */}
@@ -474,9 +555,14 @@ function App() {
             <div className="location-wrapper">
               <button
                 className={`search-btn ${searchOpen ? 'active' : ''}`}
-                onClick={() => setSearchOpen(!searchOpen)}
+                onClick={() => {
+                  if (searchOpen) {
+                    setSearchQuery('')
+                  }
+                  setSearchOpen(!searchOpen)
+                }}
               >
-                <SearchIcon />
+                {searchOpen ? <CloseIcon /> : <SearchIcon />}
               </button>
               {searchOpen ? (
                 <div className="search-input-wrapper">
