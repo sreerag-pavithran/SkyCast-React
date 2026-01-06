@@ -173,12 +173,20 @@ const LocationModal = ({ onRequestPermission, attempts, onSkip }) => (
         <LocationIcon />
       </div>
       <h2 className="modal-title">Enable Location</h2>
-      <p className="modal-text">
-        SkyCast needs access to your location to show weather information for your area.
-        {attempts > 0 && ` (Attempt ${attempts + 1} of 3)`}
-      </p>
+      {attempts > 0 ? (
+        <div className="modal-text">
+          <p className="permission-denied-msg">Location access was denied.</p>
+          <p className="permission-help">
+            To get live weather for your location, go to your <strong>browser settings</strong> → <strong>Site Settings</strong> → <strong>Location</strong> and allow access for this site.
+          </p>
+        </div>
+      ) : (
+        <p className="modal-text">
+          SkyCast needs access to your location to show weather information for your area.
+        </p>
+      )}
       <button className="modal-btn" onClick={onRequestPermission}>
-        Allow Location Access
+        {attempts > 0 ? 'Try Again' : 'Allow Location Access'}
       </button>
       {attempts > 0 && (
         <button className="modal-skip-btn" onClick={onSkip}>
@@ -346,6 +354,19 @@ function App() {
     }
   }
 
+  // Load default location (Palakkad) when geolocation is denied
+  const loadDefaultLocation = useCallback(async () => {
+    // Palakkad coordinates
+    const defaultLat = 10.7867
+    const defaultLon = 76.6548
+    const defaultLocationName = 'Palakkad, India'
+
+    await fetchWeather(defaultLat, defaultLon, defaultLocationName)
+    setLoading(false)
+    setShowFetchingModal(false)
+    // Don't hide permission modal here - let user dismiss it manually
+  }, [fetchWeather])
+
   // Request geolocation permission
   const requestLocationPermission = useCallback(() => {
     if (!navigator.geolocation) {
@@ -386,17 +407,12 @@ function App() {
       },
       (err) => {
         console.error('Geolocation error:', err)
-        const newAttempts = permissionAttempts + 1
-        setPermissionAttempts(newAttempts)
-
-        if (newAttempts >= 3) {
-          // Auto-hide modal after 3 attempts
-          setShowPermissionModal(false)
-        } else {
-          setShowPermissionModal(true)
-        }
+        // Location denied - show modal with instructions and load default location
+        setPermissionAttempts(prev => prev + 1)
+        setShowPermissionModal(true)
         setLoading(false)
-        setShowFetchingModal(false)
+        // Pre-load Palakkad weather in background so it's ready when user skips
+        loadDefaultLocation()
       },
       {
         enableHighAccuracy: true,
@@ -404,12 +420,13 @@ function App() {
         maximumAge: 0,
       }
     )
-  }, [fetchWeather, permissionAttempts])
+  }, [fetchWeather, loadDefaultLocation])
 
   // Initialize - request location on mount
   useEffect(() => {
     requestLocationPermission()
-  }, [requestLocationPermission])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Update time every second
   useEffect(() => {
@@ -503,6 +520,7 @@ function App() {
         },
         (err) => {
           console.error('Geolocation error:', err)
+          setPermissionAttempts(prev => prev + 1)
           setShowPermissionModal(true)
           resolve()
         },
