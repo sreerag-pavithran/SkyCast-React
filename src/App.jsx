@@ -166,7 +166,7 @@ const CreditsModal = ({ onClose }) => (
 )
 
 // Location Permission Modal Component
-const LocationModal = ({ onRequestPermission }) => (
+const LocationModal = ({ onRequestPermission, attempts, onSkip }) => (
   <div className="modal-overlay">
     <div className="modal-content">
       <div className="modal-icon">
@@ -175,11 +175,16 @@ const LocationModal = ({ onRequestPermission }) => (
       <h2 className="modal-title">Enable Location</h2>
       <p className="modal-text">
         SkyCast needs access to your location to show weather information for your area.
-        Please allow location access when prompted.
+        {attempts > 0 && ` (Attempt ${attempts + 1} of 3)`}
       </p>
       <button className="modal-btn" onClick={onRequestPermission}>
         Allow Location Access
       </button>
+      {attempts > 0 && (
+        <button className="modal-skip-btn" onClick={onSkip}>
+          Skip & Search Manually
+        </button>
+      )}
     </div>
   </div>
 )
@@ -244,6 +249,7 @@ function App() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [error, setError] = useState(null)
   const [showPermissionModal, setShowPermissionModal] = useState(false)
+  const [permissionAttempts, setPermissionAttempts] = useState(0)
   const [showFetchingModal, setShowFetchingModal] = useState(false)
   const [showSearchingModal, setShowSearchingModal] = useState(false)
   const [searchingLocation, setSearchingLocation] = useState('')
@@ -380,7 +386,15 @@ function App() {
       },
       (err) => {
         console.error('Geolocation error:', err)
-        setShowPermissionModal(true)
+        const newAttempts = permissionAttempts + 1
+        setPermissionAttempts(newAttempts)
+
+        if (newAttempts >= 3) {
+          // Auto-hide modal after 3 attempts
+          setShowPermissionModal(false)
+        } else {
+          setShowPermissionModal(true)
+        }
         setLoading(false)
         setShowFetchingModal(false)
       },
@@ -390,7 +404,7 @@ function App() {
         maximumAge: 0,
       }
     )
-  }, [fetchWeather])
+  }, [fetchWeather, permissionAttempts])
 
   // Initialize - request location on mount
   useEffect(() => {
@@ -505,11 +519,20 @@ function App() {
     setShowFetchingModal(false)
   }
 
+  const handleSkipPermission = () => {
+    setShowPermissionModal(false)
+    setLoading(false)
+  }
+
   // Show permission modal if needed
   if (showPermissionModal) {
     return (
       <div className="app">
-        <LocationModal onRequestPermission={requestLocationPermission} />
+        <LocationModal
+          onRequestPermission={requestLocationPermission}
+          attempts={permissionAttempts}
+          onSkip={handleSkipPermission}
+        />
       </div>
     )
   }
@@ -532,7 +555,11 @@ function App() {
   return (
     <div className="app">
       {showPermissionModal && (
-        <LocationModal onRequestPermission={requestLocationPermission} />
+        <LocationModal
+          onRequestPermission={requestLocationPermission}
+          attempts={permissionAttempts}
+          onSkip={handleSkipPermission}
+        />
       )}
 
       {showFetchingModal && <FetchingLocationModal />}
